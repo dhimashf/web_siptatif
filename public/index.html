@@ -1,11 +1,20 @@
 <!DOCTYPE html>
-<html lang="">
+<html lang="en"> <!-- Set the lang attribute to "en" for English -->
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <link rel="icon" href="<%= BASE_URL %>favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/favicon.ico"> <!-- Use absolute path for favicon -->
     <title><%= htmlWebpackPlugin.options.title %></title>
+    <!-- Include any global styles or third-party stylesheets here -->
+    <style>
+      /* Global styles */
+      * {
+        margin: 0 ;
+        padding: 0 ;
+        
+      }
+    </style>
   </head>
   <body>
     <noscript>
