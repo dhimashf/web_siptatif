@@ -24,17 +24,17 @@
             <input type="text" v-model="inputJudul" placeholder="Judul">
           </div>
           <div class="form-group">
-  <label for="calonPembimbing1">Calon Pembimbing 1:</label>
-  <select v-model="inputCalonPembimbing1" id="calonPembimbing1">
-  <option v-for="dosen in availableDosenList1" :key="dosen.nidn" :value="dosen.nama">{{ dosen.nama }}</option>
-</select>
-</div>
-<div class="form-group">
-  <label for="calonPembimbing2">Calon Pembimbing 2:</label>
-  <select v-model="inputCalonPembimbing2" id="calonPembimbing2">
-  <option v-for="dosen in availableDosenList2" :key="dosen.nidn" :value="dosen.nama">{{ dosen.nama }}</option>
-</select>
-</div>
+            <label for="calonPembimbing1">Calon Pembimbing 1:</label>
+            <select v-model="inputCalonPembimbing1" id="calonPembimbing1">
+              <option v-for="dosen in availableDosenList1" :key="dosen.nidn" :value="dosen.nama">{{ dosen.nama_dosen }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="calonPembimbing2">Calon Pembimbing 2:</label>
+            <select v-model="inputCalonPembimbing2" id="calonPembimbing2">
+              <option v-for="dosen in availableDosenList2" :key="dosen.nidn" :value="dosen.nama">{{ dosen.nama_dosen }}</option>
+            </select>
+          </div>
           <div class="form-group">
             <input type="file" @change="onFileChange" placeholder="Berkas">
           </div>
@@ -46,7 +46,7 @@
             </select>
           </div>
           <div class="form-group">
-            <button class="btttn tambah-button" @click="tambahData">Tambah Data Mahasiswa</button>
+            <button class="btttn tambah-button" @click.prevent="tambahData">Tambah Data Mahasiswa</button>
           </div>
         </form>
       </div>
@@ -54,11 +54,11 @@
 
     <!-- Button to open modal -->
     <button class="btttn tambah-button" @click="openModal">
-      <i class="pi pi-plus-circle icon"></i> Data Mahasiswa
+      <i class="pi pi-plus-circle icon"></i> Tambah Data Mahasiswa
     </button>
 
-    <!-- Table to display mahasiswa data -->
-    <table>
+    <table class="mahasiswa-table">
+      <!-- Table headers -->
       <thead>
         <tr>
           <th>No</th>
@@ -71,18 +71,26 @@
           <th>Aksi</th>
         </tr>
       </thead>
+      <!-- Table body -->
       <tbody>
-        <tr v-for="(mahasiswa, index) in mahasiswaList" :key="index">
-          <td>{{ mahasiswa.no }}</td>
+        <!-- Loop through mahasiswaList array -->
+        <tr v-for="(mahasiswa, index) in mahasiswaList" :key="mahasiswa.nim">
+          <!-- Display data for each mahasiswa -->
+          <td>{{ index + 1 }}</td>
           <td>{{ mahasiswa.tanggal }}</td>
           <td>{{ mahasiswa.nama }}</td>
           <td>{{ mahasiswa.nim }}</td>
           <td>{{ mahasiswa.email }}</td>
           <td>{{ mahasiswa.judul }}</td>
           <td>{{ mahasiswa.status }}</td>
+          <!-- Action buttons -->
           <td>
-            <button class="btttn tombol-detail" @click="showDetail">Detail</button>
-            <button class="btttn tombol-delete" @click="() => confirmDelete(index)">Hapus</button>
+            <div class="aksi-buttons">
+              <!-- Button to show details -->
+              <button class="btttn tombol-detail" @click="showDetail(mahasiswa)">Detail</button>
+              <!-- Button to delete -->
+              <button class="btttn tombol-delete" @click="confirmDelete(mahasiswa)">Hapus</button>
+            </div>
           </td>
         </tr>
       </tbody>
@@ -91,11 +99,13 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   data() {
     return {
+      mahasiswaList: [],
       showModal: false,
-      inputNo:'',
       inputTanggal: '',
       inputNama: '',
       inputNIM: '',
@@ -103,77 +113,62 @@ export default {
       inputJudul: '',
       inputCalonPembimbing1: '',
       inputCalonPembimbing2: '',
-      inputBerkas: null,
-      inputCatatan: '',
-      inputStatus: 'menunggu',
       inputKategoriTA: '',
-      mahasiswaList: JSON.parse(localStorage.getItem('mahasiswaList')) || [],
-      dosenList: JSON.parse(localStorage.getItem('dosenList')) || []
+      availableDosenList1: [],
+      availableDosenList2: [],
+      selectedFile: null
     };
   },
-  computed: {
-    availableDosenList1() {
-      return this.dosenList.filter(dosen => dosen.nama !== this.inputCalonPembimbing2);
-    },
-    availableDosenList2() {
-      return this.dosenList.filter(dosen => dosen.nama !== this.inputCalonPembimbing1);
-    }
-  },
-  watch: {
-    mahasiswaList: {
-      handler(newVal) {
-        localStorage.setItem('mahasiswaList', JSON.stringify(newVal));
-      },
-      deep: true
-    },
-    dosenList: {
-      handler(newVal) {
-        localStorage.setItem('dosenList', JSON.stringify(newVal));
-      },
-      deep: true
-    }
-  },
   methods: {
-    showDetail() {
-      this.$router.push({ name: 'FileMahasiswa', params: { kategoriTA: this.inputKategoriTA } });
+    async fetchData() {
+      try {
+        const response = await axios.get('/api/mahasiswa');
+        this.mahasiswaList = response.data;
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
     },
-    confirmDelete(index) {
+    async fetchDosen() {
+  try {
+    const response = await axios.get('/api/mahasiswa/dosen');
+    const dosenList = response.data.dosenList;
+
+    // Filter out the Dosen who are already chosen as Pembimbing 1 or Pembimbing 2
+    this.availableDosenList1 = dosenList.filter(dosen => dosen.NIP !== this.inputCalonPembimbing2);
+    this.availableDosenList2 = dosenList.filter(dosen => dosen.NIP !== this.inputCalonPembimbing1);
+  } catch (error) {
+    console.error('Error fetching dosen data:', error);
+  }
+},
+
+    showDetail(mahasiswa) {
+      this.$router.push({ name: 'FileMahasiswa', params: { nim: mahasiswa.nim } });
+    },
+    async confirmDelete(mahasiswa) {
       if (confirm("Apakah Anda yakin ingin menghapus data mahasiswa ini?")) {
-        this.mahasiswaList.splice(index, 1);
-        this.updateNoValues();
+        try {
+          // Send request to delete data
+          await axios.delete(`/api/mahasiswa/${mahasiswa.nim}`);
+          // Remove deleted mahasiswa from mahasiswaList
+          const index = this.mahasiswaList.findIndex(item => item.nim === mahasiswa.nim);
+          if (index !== -1) {
+            this.mahasiswaList.splice(index, 1);
+          }
+        } catch (error) {
+          console.error('Error deleting data:', error);
+        }
       } else {
         console.log("Penghapusan data dibatalkan");
       }
     },
-    onFileChange(event) {
-      this.inputBerkas = event.target.files[0];
+    openModal() {
+      this.showModal = true;
     },
-    tambahData() {
-      let newMahasiswa = {
-        tanggal: this.inputTanggal,
-        nama: this.inputNama,
-        nim: this.inputNIM,
-        email: this.inputEmail,
-        judul: this.inputJudul,
-        calonPembimbing1: this.inputCalonPembimbing1,
-        calonPembimbing2: this.inputCalonPembimbing2,
-        berkas: this.inputBerkas ? this.inputBerkas.name : null,
-        catatan: this.inputCatatan,
-        status: 'menunggu',
-        kategoriTA: this.inputKategoriTA
-      };
-
-      this.mahasiswaList.push(newMahasiswa);
-      this.updateNoValues();
-      this.clearInputFields();
-      this.closeModal();
+    closeModal() {
+      this.showModal = false;
+      this.resetForm();
     },
-    updateNoValues() {
-      this.mahasiswaList.forEach((mahasiswa, index) => {
-        mahasiswa.no = index + 1;
-      });
-    },
-    clearInputFields() {
+    resetForm() {
       this.inputTanggal = '';
       this.inputNama = '';
       this.inputNIM = '';
@@ -181,34 +176,47 @@ export default {
       this.inputJudul = '';
       this.inputCalonPembimbing1 = '';
       this.inputCalonPembimbing2 = '';
-      this.inputBerkas = null;
-      this.inputCatatan = '';
       this.inputKategoriTA = '';
+      this.selectedFile = null;
     },
-    openModal() {
-      this.showModal = true;
+    onFileChange(event) {
+      this.selectedFile = event.target.files[0];
     },
-    closeModal() {
-      this.showModal = false;
+    async tambahData() {
+      // Add your logic to send data to the server here
+      // Example using axios to post data
+      const formData = new FormData();
+      formData.append('tanggal', this.inputTanggal);
+      formData.append('nama', this.inputNama);
+      formData.append('nim', this.inputNIM);
+      formData.append('email', this.inputEmail);
+      formData.append('judul', this.inputJudul);
+      formData.append('calonPembimbing1', this.inputCalonPembimbing1);
+      formData.append('calonPembimbing2', this.inputCalonPembimbing2);
+      formData.append('kategoriTA', this.inputKategoriTA);
+      if (this.selectedFile) {
+        formData.append('berkas', this.selectedFile);
+      }
+
+      try {
+        const response = await axios.post('/api/mahasiswa', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        this.mahasiswaList.push(response.data);
+        this.closeModal();
+      } catch (error) {
+        console.error('Error adding data:', error);
+      }
     }
   },
   mounted() {
-    // Parse and set initial values
-    if (!localStorage.getItem('mahasiswaList')) {
-      localStorage.setItem('mahasiswaList', JSON.stringify(this.mahasiswaList));
-    } else {
-      this.mahasiswaList = JSON.parse(localStorage.getItem('mahasiswaList'));
-    }
-
-    if (!localStorage.getItem('dosenList')) {
-      localStorage.setItem('dosenList', JSON.stringify(this.dosenList));
-    } else {
-      this.dosenList = JSON.parse(localStorage.getItem('dosenList'));
-    }
+    this.fetchData();
+    this.fetchDosen();
   }
-}
+};
 </script>
-
 
 <style scoped>
 /* Global styles */
@@ -224,37 +232,38 @@ h2 {
   margin-left: 20px;
 }
 
-table {
+.mahasiswa-table {
   width: 96.5%;
   max-width: 2000px;
   border-collapse: collapse;
-  margin-top: 20px;
-  margin-left: 20px;
-  margin-right: 20px;
+  margin: 20px auto; /* Center the table */
 }
 
-table th,
-table td {
+.mahasiswa-table th,
+.mahasiswa-table td {
   border: 1px solid #ddd;
   padding: 8px;
   text-align: left;
 }
 
-table th {
+.mahasiswa-table th {
   background-color: #f2f2f2;
 }
 
-table tr:nth-child(even) {
+.mahasiswa-table tr:nth-child(even) {
   background-color: #f2f2f2;
 }
 
-table tr:hover {
+.mahasiswa-table tr:hover {
   background-color: #ddd;
+}
+
+.aksi-buttons {
+  display: flex;
 }
 
 .btttn {
   padding: 8px 12px;
-  margin-left: 20px;
   cursor: pointer;
   border: none;
   border-radius: 4px;
@@ -263,23 +272,10 @@ table tr:hover {
   text-decoration: none;
 }
 
-.tambah-button {
-  background-color: #36802D;
-  color: white;
-  float: left;
-  margin-bottom: 20px;
-  margin-top: 10px;
-}
-
-.icon {
-  margin-right: 5px;
-  font-size: 14px;
-  color: white;
-}
-
 .tombol-detail {
   background-color: #2196F3;
   color: white;
+  margin-right: 5px;
 }
 
 .tombol-delete {
@@ -287,64 +283,85 @@ table tr:hover {
   color: white;
 }
 
+.tambah-button {
+  background-color: #4CAF50;
+  color: white;
+  margin-left: 20px;
+  margin-top: 20px;
+}
+
 .modal {
   display: flex;
   justify-content: center;
   align-items: center;
   position: fixed;
-  top: 0;
+  z-index: 1;
   left: 0;
+  top: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
-  z-index: 1000;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.5);
 }
 
 .modal-content {
-  position: relative;
-  padding: 20px;
-  background-color: #fefefe;
-  border-radius: 5px;
-  width: 60%;
+  background-color: #fff;
+  padding: 15px;
+  border: 1px solid #888;
+  width: 90%;
   max-width: 400px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-.modal-content h3 {
-  margin-bottom: 20px;
+  border-radius: 8px;
 }
 
 .close-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close-btn:hover,
+.close-btn:focus {
+  color: black;
+  text-decoration: none;
   cursor: pointer;
 }
 
 .form-container {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
 }
 
 .form-group {
-  margin-bottom: 7px;
+  margin-bottom: 10px;
 }
 
-#kategoriTA {
+.form-group input,
+.form-group select {
   width: 100%;
-  padding: 10px;
-  margin-bottom: 10px;
+  padding: 8px;
+  margin: 5px 0;
+  display: inline-block;
   border: 1px solid #ccc;
   border-radius: 4px;
+  box-sizing: border-box;
 }
 
-table tbody tr td:last-child {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.form-group label {
+  margin-bottom: 5px;
+}
+
+.form-group button {
+  width: 100%;
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.form-group button:hover {
+  background-color: #45a049;
 }
 </style>

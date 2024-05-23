@@ -9,22 +9,10 @@
         <h3>{{ editingIndex === null ? 'Tambah' : 'Edit' }} Data Dosen Pembimbing</h3>
         <form id="formTambahDosenModal" @submit.prevent="submitForm" class="form-container">
           <div class="form-group">
-            <input type="text" v-model="inputNama" placeholder="Nama Dosen">
+            <input type="text" v-model="inputNama" placeholder="Nama Dosen" required>
           </div>
           <div class="form-group">
-            <input type="text" v-model="inputNIDN" placeholder="NIDN">
-          </div>
-          <div class="form-group">
-            <select v-model="inputJenisKelamin">
-              <option value="Laki-laki">Laki-laki</option>
-              <option value="Perempuan">Perempuan</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <input type="text" v-model="inputKeahlian" placeholder="Keahlian">
-          </div>
-          <div class="form-group">
-            <input type="text" v-model="inputKuota" placeholder="Kuota">
+            <input type="text" v-model="inputNIP" placeholder="NIP" required>
           </div>
           <div class="form-group">
             <button type="submit" class="btttn tambah-button">
@@ -44,72 +32,77 @@
         <tr>
           <th>No</th>
           <th>Nama Dosen</th>
-          <th>NIDN</th>
-          <th>Jenis Kelamin</th>
-          <th>Keahlian</th>
-          <th>Kuota</th>
+          <th>NIP</th>
           <th>Aksi</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="(dosen, index) in dosenList" :key="index">
-          <td>{{ dosen.no }}</td>
-          <td>{{ dosen.nama }}</td>
-          <td>{{ dosen.nidn }}</td>
-          <td>{{ dosen.jenisKelamin }}</td>
-          <td>{{ dosen.keahlian }}</td>
-          <td>{{ dosen.kuota }}</td>
+          <td>{{ index + 1 }}</td>
+          <td>{{ dosen.nama_pembimbing }}</td>
+          <td>{{ dosen.nip_pembimbing }}</td>
           <td>
             <button class="btttn tombol-edit" @click="editDosen(index)">Edit</button>
-            <button class="btttn tombol-delete" @click="() => confirmDelete(index)">Hapus</button>
-            <button class="btttn tombol-detail" @click="showDetail">Detail</button>
+            <button class="btttn tombol-delete" @click="confirmDelete(dosen.nip_pembimbing, index)">Hapus</button>
+            <button class="btttn tombol-detail" @click="showDetail(dosen)">Detail</button>
           </td>
         </tr>
       </tbody>
     </table>
   </div>
 </template>
+
 <script>
 export default {
   data() {
     return {
       showModal: false,
       editingIndex: null,
-      inputNo: '',
       inputNama: '',
-      inputNIDN: '',
-      inputJenisKelamin: 'Laki-laki',
-      inputKeahlian: '',
-      inputKuota: '',
-      dosenList: JSON.parse(localStorage.getItem('dosenList')) || []
+      inputNIP: '',
+      dosenList: []
     };
   },
-  watch: {
-    dosenList: {
-      handler() {
-        this.updateDosenList();
-      },
-      deep: true
-    }
+  created() {
+    this.fetchDosenList();
   },
   methods: {
-    showDetail() {
-      // Navigating to LihatDosen component
-      this.$router.push({ name: 'KuotaPembimbing' });
+    fetchDosenList() {
+      fetch('/api/dosen/pembimbing')
+        .then(response => response.json())
+        .then(data => {
+          this.dosenList = data;
+        })
+        .catch(error => {
+          console.error('Error fetching dosen pembimbing list:', error);
+        });
     },
-    confirmDelete(index) {
+    showDetail(dosen) {
+      this.$router.push({ name: 'DetailPembimbing', params: { nip_pembimbing: dosen.nip_pembimbing } });
+    },
+    confirmDelete(nip, index) {
       if (confirm("Apakah Anda yakin ingin menghapus data dosen ini?")) {
-        this.dosenList.splice(index, 1);
-        console.log("Data dosen dihapus");
-        
-        // Update No values after deleting a record
-        this.updateNoValues();
+        fetch(`/api/dosen/pembimbing/${nip}`, {
+          method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(result => {
+          if (result.success) {
+            this.dosenList.splice(index, 1);
+            this.updateNoValues();
+            console.log("Data dosen dihapus");
+          } else {
+            alert(result.message);
+          }
+        })
+        .catch(error => {
+          console.error('Error deleting dosen pembimbing:', error);
+        });
       } else {
         console.log("Penghapusan data dibatalkan");
       }
     },
     updateNoValues() {
-      // Regenerate No values based on the current order
       this.dosenList.forEach((dosen, index) => {
         dosen.no = index + 1;
       });
@@ -122,43 +115,67 @@ export default {
       }
     },
     tambahData() {
-      // Automatically generate No based on the length of dosenList + 1
-      const no = this.dosenList.length + 1;
-
-      this.dosenList.push({
-        no: no,
-        nama: this.inputNama,
-        nidn: this.inputNIDN,
-        jenisKelamin: this.inputJenisKelamin,
-        keahlian: this.inputKeahlian,
-        kuota: this.inputKuota
+      fetch('/api/dosen/pembimbing', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          nama: this.inputNama,
+          nip: this.inputNIP
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          this.dosenList.push({
+            nama_pembimbing: this.inputNama,
+            nip_pembimbing: this.inputNIP
+          });
+          this.updateNoValues();
+          this.resetForm();
+          this.closeModal();
+        } else {
+          alert(data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error adding dosen:', error);
       });
-
-      this.resetForm();
-      this.closeModal();
     },
     updateData() {
-      this.dosenList[this.editingIndex] = {
-        no: this.dosenList[this.editingIndex].no, // Keep the existing No value
-        nama: this.inputNama,
-        nidn: this.inputNIDN,
-        jenisKelamin: this.inputJenisKelamin,
-        keahlian: this.inputKeahlian,
-        kuota: this.inputKuota
-      };
-
-      this.resetForm();
-      this.closeModal();
+      fetch(`/api/dosen/pembimbing/${this.inputNIP}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          nama: this.inputNama
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          this.dosenList[this.editingIndex] = {
+            nama_pembimbing: this.inputNama,
+            nip_pembimbing: this.inputNIP
+          };
+          this.updateNoValues();
+          this.resetForm();
+          this.closeModal();
+        } else {
+          alert(data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error updating dosen:', error);
+      });
     },
     editDosen(index) {
       this.editingIndex = index;
       const dosen = this.dosenList[index];
-      this.inputNama = dosen.nama;
-      this.inputNIDN = dosen.nidn;
-      this.inputJenisKelamin = dosen.jenisKelamin;
-      this.inputKeahlian = dosen.keahlian;
-      this.inputKuota = dosen.kuota;
-      
+      this.inputNama = dosen.nama_pembimbing;
+      this.inputNIP = dosen.nip_pembimbing;
       this.openModal();
     },
     openModal() {
@@ -170,17 +187,13 @@ export default {
     },
     resetForm() {
       this.inputNama = '';
-      this.inputNIDN = '';
-      this.inputJenisKelamin = 'Laki-laki';
-      this.inputKeahlian = '';
-      this.inputKuota = '';
-    },
-    updateDosenList() {
-      localStorage.setItem('dosenList', JSON.stringify(this.dosenList));
+      this.inputNIP = '';
     }
   }
 }
 </script>
+
+
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css?family=Poppins:400,500,600,700&display=swap');
@@ -336,3 +349,4 @@ table tbody tr td:last-child {
   margin: 0 5px;
 }
 </style>
+

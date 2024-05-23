@@ -1,11 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import LayoutPage from '@/components/LayoutPage.vue'
+import LayoutPage from '@/components/LayoutPage.vue';
 import HomePage from '@/components/HomePage.vue';
 import ProfilePage from '@/components/ProfilePage.vue';
 import DosenPembimbing from '@/components/DosenPembimbing.vue';
-import KuotaPembimbing from '@/components/KuotaPembimbing.vue';
+import DetailPembimbing from '@/components/DetailPembimbing.vue';
 import DosenPenguji from '@/components/DosenPenguji.vue';
-import KuotaPenguji from '@/components/KuotaPenguji.vue';
+import DetailPenguji from '@/components/DetailPenguji.vue';
 import FileMahasiswa from '@/components/FileMahasiswa.vue';
 import LoginPage from '@/components/LoginPage.vue';
 import ForgotPassword from '@/components/ForgotPassword.vue';
@@ -14,11 +14,10 @@ import RegistrationPage from '@/components/RegistrationPage.vue';
 
 const routes = [
   {
-    path: '/',
+    path: '/Login',
     name: 'Login',
     component: LoginPage
   },
- 
   {
     path: '/Forgot-password',
     name: 'ForgotPassword',
@@ -35,7 +34,7 @@ const routes = [
     component: LayoutPage,
     children: [
       {
-        path: '/home',
+        path: '/',
         name: 'Home',
         component: HomePage
       },
@@ -50,9 +49,10 @@ const routes = [
         component: DosenPembimbing
       },
       {
-        path: '/kuota-pembimbing',
-        name: 'KuotaPembimbing',
-        component: KuotaPembimbing
+        path: '/detail-pembimbing/:nip_pembimbing',
+        name: 'DetailPembimbing',
+        component: DetailPembimbing,
+        props: true
       },
       {
         path: '/dosen-penguji',
@@ -60,14 +60,16 @@ const routes = [
         component: DosenPenguji
       },
       {
-        path: '/kuota-penguji',
-        name: 'KuotaPenguji',
-        component: KuotaPenguji
+        path: '/detail-penguji/:nip_penguji',
+        name: 'DetailPenguji',
+        component: DetailPenguji,
+        props: true
       },
       {
-        path: '/file-mahasiswa',
+        path: '/file-mahasiswa/:nim',
         name: 'FileMahasiswa',
-        component: FileMahasiswa
+        component: FileMahasiswa,
+        props: true
       },
       {
         path: '/mahasiswa',
@@ -76,8 +78,6 @@ const routes = [
       },
     ]
   },
-
-  // ... other routes
 ];
 
 const router = createRouter({
