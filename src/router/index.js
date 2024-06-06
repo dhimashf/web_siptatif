@@ -14,7 +14,7 @@ import RegistrationPage from '@/components/RegistrationPage.vue';
 
 const routes = [
   {
-    path: '/Login',
+    path: '/login',
     name: 'Login',
     component: LoginPage
   },

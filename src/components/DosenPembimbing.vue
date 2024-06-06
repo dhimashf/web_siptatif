@@ -2,12 +2,12 @@
   <div>
     <h2>Data Dosen Pembimbing</h2>
 
-    <!-- Modal for Tambah Data Dosen Pembimbing -->
+    <!-- Modal for Edit Data Dosen Pembimbing -->
     <div v-if="showModal" class="modal">
       <div class="modal-content">
         <span class="close-btn" @click="closeModal">&times;</span>
-        <h3>{{ editingIndex === null ? 'Tambah' : 'Edit' }} Data Dosen Pembimbing</h3>
-        <form id="formTambahDosenModal" @submit.prevent="submitForm" class="form-container">
+        <h3>Edit Data Dosen Pembimbing</h3>
+        <form id="formEditDosenModal" @submit.prevent="submitForm" class="form-container">
           <div class="form-group">
             <input type="text" v-model="inputNama" placeholder="Nama Dosen" required>
           </div>
@@ -15,17 +15,13 @@
             <input type="text" v-model="inputNIP" placeholder="NIP" required>
           </div>
           <div class="form-group">
-            <button type="submit" class="btttn tambah-button">
-              {{ editingIndex === null ? 'Tambah' : 'Update' }} Data Dosen
+            <button type="submit" class="btttn update-button">
+              Update Data Dosen
             </button>
           </div>
         </form>
       </div>
     </div>
-
-    <button class="btttn tambah-button" @click="openModal">
-      <i class="pi pi-plus-circle icon"></i> Data Dosen
-    </button>
 
     <table>
       <thead>
@@ -68,7 +64,7 @@ export default {
   },
   methods: {
     fetchDosenList() {
-      fetch('/api/dosen/pembimbing')
+      fetch('https://express-mysql-virid.vercel.app/api/dosen/pembimbing')
         .then(response => response.json())
         .then(data => {
           this.dosenList = data;
@@ -82,7 +78,7 @@ export default {
     },
     confirmDelete(nip, index) {
       if (confirm("Apakah Anda yakin ingin menghapus data dosen ini?")) {
-        fetch(`/api/dosen/pembimbing/${nip}`, {
+        fetch(`https://express-mysql-virid.vercel.app/api/dosen/pembimbing/${nip}`, {
           method: 'DELETE'
         })
         .then(response => response.json())
@@ -108,43 +104,10 @@ export default {
       });
     },
     submitForm() {
-      if (this.editingIndex === null) {
-        this.tambahData();
-      } else {
-        this.updateData();
-      }
-    },
-    tambahData() {
-      fetch('/api/dosen/pembimbing', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          nama: this.inputNama,
-          nip: this.inputNIP
-        })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          this.dosenList.push({
-            nama_pembimbing: this.inputNama,
-            nip_pembimbing: this.inputNIP
-          });
-          this.updateNoValues();
-          this.resetForm();
-          this.closeModal();
-        } else {
-          alert(data.message);
-        }
-      })
-      .catch(error => {
-        console.error('Error adding dosen:', error);
-      });
+      this.updateData();
     },
     updateData() {
-      fetch(`/api/dosen/pembimbing/${this.inputNIP}`, {
+      fetch(`https://express-mysql-virid.vercel.app/api/dosen/pembimbing/${this.inputNIP}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -193,8 +156,6 @@ export default {
 }
 </script>
 
-
-
 <style scoped>
 @import url('https://fonts.googleapis.com/css?family=Poppins:400,500,600,700&display=swap');
 
@@ -207,8 +168,15 @@ export default {
 }
 
 h2 {
-  margin-top: 20px;
-  margin-left: 20px;
+  text-align: center;
+  margin-bottom: 10px;
+  text-transform: capitalize;
+}
+
+h3 {
+  text-align: center;
+  margin-bottom: 15px;
+  text-transform: capitalize;
 }
 
 table {
@@ -245,7 +213,7 @@ table tr:hover {
   margin-right: 20px;
   cursor: pointer;
   border: none;
-  border-radius: 4px;
+  border-radius: 10px;
   font-size: 14px;
   text-align: center;
   text-decoration: none;
@@ -298,7 +266,7 @@ table tr:hover {
   position: relative;
   padding: 20px;
   background-color: #fefefe;
-  border-radius: 5px;
+  border-radius: 15px;
   width: 60%;
   max-width: 400px;
   display: flex;
@@ -324,13 +292,13 @@ table tr:hover {
   margin-bottom: 7px;
 }
 
-#formTambahDosenModal input,
-#formTambahDosenModal select {
+#formEditDosenModal input,
+#formEditDosenModal select {
   width: 100%;
   padding: 10px;
   margin-bottom: 10px;
   border: 1px solid #ccc;
-  border-radius: 4px;
+  border-radius: 15px;
 }
 
 .form-container > .form-group:last-child {
@@ -349,4 +317,3 @@ table tbody tr td:last-child {
   margin: 0 5px;
 }
 </style>
-
